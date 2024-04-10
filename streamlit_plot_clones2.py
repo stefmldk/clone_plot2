@@ -10,7 +10,7 @@ __version__ = '1.8.0'
 
 # Production candidate. Can do VAF/VAF plots and heatmaps similar to the one in Stephanies PhD: page 53 - fig. 3
 # Todo: Make the cluster remove ability available for both plot types and fix color to clusters. Also, ability to filter minimal max VAF
-# Cluster colors should be part of the input file
+# Cluster colors should be part of the input file. Done
 
 
 # New in version 1.7: Added a new heat-map kind of plot similar to the one in Stephanies PhD: page 53 - fig. 3
@@ -22,11 +22,11 @@ streamlit.set_page_config(layout="wide")
 uploaded_file = streamlit.sidebar.file_uploader("Choose a file to start")
 
 # Define colors to use for cluster colors (more dynamic alternative would be to allow one to upload a file defining the colors)
-cluster_colors = ["#989794", "#813D86", "#F6EA4C", "#FD973C", "#FF3C2F", "#04ff00", "#997b1a", "#870e0e", "#9a05f7",
-                  "#509690", "#6f85f2", "#fc0303", "#fc03b6", "#8a3a01", "#fa6c07", "#c4a7a7", "#fcfc03", "#fa6161",
-                  "#025750", "#7a5e04", "#66024a", "#ad73d1", "#01188c", "#032dff", "#c5cefc", "#fab9b9", "#fc954c",
-                  "#1e5e1e", "#703d62", "#acfcf6", "#fcc203", "#a6f7a6", "#e6c2fc", "#00fcec", "#4d1570", "#694125",
-                  "#016b01"]
+# cluster_colors = ["#989794", "#813D86", "#F6EA4C", "#FD973C", "#FF3C2F", "#04ff00", "#997b1a", "#870e0e", "#9a05f7",
+#                   "#509690", "#6f85f2", "#fc0303", "#fc03b6", "#8a3a01", "#fa6c07", "#c4a7a7", "#fcfc03", "#fa6161",
+#                   "#025750", "#7a5e04", "#66024a", "#ad73d1", "#01188c", "#032dff", "#c5cefc", "#fab9b9", "#fc954c",
+#                   "#1e5e1e", "#703d62", "#acfcf6", "#fcc203", "#a6f7a6", "#e6c2fc", "#00fcec", "#4d1570", "#694125",
+#                   "#016b01"]
 
 if uploaded_file is not None:
     patient_name = os.path.splitext(os.path.basename(uploaded_file.name))[0]
@@ -81,6 +81,7 @@ if uploaded_file is not None:
     # Filter data frame based on show_cluster values
     clusters_to_include = [cluster for cluster in show_cluster if show_cluster[cluster]]
     data_frame = data_frame[data_frame['Cluster'].isin(clusters_to_include)]
+    cluster_colors = data_frame.Color.unique()
     clusters = clusters_to_include
 
     #################################################################################
@@ -110,10 +111,10 @@ if uploaded_file is not None:
             sample_combination = list(display_combinations.values())[0]
 
         # Data filtering
-        data_filtering = streamlit.sidebar.expander('Data filters')
-
-        # User input
-        min_vaf = data_filtering.slider('Minimal MAF', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
+        # data_filtering = streamlit.sidebar.expander('Data filters')
+        #
+        # # User input
+        # min_vaf = data_filtering.slider('Minimal MAF', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
         # User input - Which data type to plot
         data_type = streamlit.sidebar.radio('Select data type', ('VAF', 'pyclone_CCF', 'VAF_CCF'))
@@ -543,10 +544,17 @@ if uploaded_file is not None:
             width=1000,
             height=1000,
             scene=dict(
+                xaxis=dict(
+                    title_text='Sample'
+                ),
                 yaxis=dict(
                     ticktext=gene_column,
+                    title_text='"Variant"'
                     # nticks=len(gene_column)
-                )
+                ),
+                zaxis=dict(
+                    title_text='VAF'
+                ),
             ),
             template='plotly'
         )
