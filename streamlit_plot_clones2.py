@@ -10,7 +10,7 @@ __version__ = '1.8.0'
 
 # Production candidate. Can do VAF/VAF plots and heatmaps similar to the one in Stephanies PhD: page 53 - fig. 3
 # Todo: Make the cluster remove ability available for both plot types and fix color to clusters. Also, ability to filter minimal max VAF
-# Cluster colors should be part of the input file. Done
+# Cluster colors should be part of the input file
 
 
 # New in version 1.7: Added a new heat-map kind of plot similar to the one in Stephanies PhD: page 53 - fig. 3
@@ -19,16 +19,11 @@ __version__ = '1.8.0'
 streamlit.set_page_config(layout="wide")
 
 # User input - File upload - starting point
-uploaded_file = streamlit.sidebar.file_uploader("Choose a file to start")
-
-# Define colors to use for cluster colors (more dynamic alternative would be to allow one to upload a file defining the colors)
-# cluster_colors = ["#989794", "#813D86", "#F6EA4C", "#FD973C", "#FF3C2F", "#04ff00", "#997b1a", "#870e0e", "#9a05f7",
-#                   "#509690", "#6f85f2", "#fc0303", "#fc03b6", "#8a3a01", "#fa6c07", "#c4a7a7", "#fcfc03", "#fa6161",
-#                   "#025750", "#7a5e04", "#66024a", "#ad73d1", "#01188c", "#032dff", "#c5cefc", "#fab9b9", "#fc954c",
-#                   "#1e5e1e", "#703d62", "#acfcf6", "#fcc203", "#a6f7a6", "#e6c2fc", "#00fcec", "#4d1570", "#694125",
-#                   "#016b01"]
+uploaded_file = streamlit.sidebar.file_uploader("Choose a file to start", key='file_uploader')
 
 if uploaded_file is not None:
+    # streamlit.write(streamlit.session_state)
+
     patient_name = os.path.splitext(os.path.basename(uploaded_file.name))[0]
     data_frame = pandas.read_csv(uploaded_file, sep='\t')
 
@@ -37,12 +32,12 @@ if uploaded_file is not None:
 
     column_names = data_frame.columns
     vaf_columns = [name for name in column_names if (name.startswith('VAF') and not name.startswith('VAF_CCF'))]
-    pyclone_ccf_columns = [name for name in column_names if name.startswith('pyclone')]
-    vaf_ccf_columns = [name for name in column_names if name.startswith('CCF')]
-    minor_cn_columns = [name for name in column_names if name.startswith('min')]
-    major_cn_columns = [name for name in column_names if name.startswith('maj')]
-    ref_counts_columns = [name for name in column_names if name.startswith('ref')]
-    alt_counts_columns = [name for name in column_names if name.startswith('alt')]
+    # pyclone_ccf_columns = [name for name in column_names if name.startswith('pyclone')]
+    # vaf_ccf_columns = [name for name in column_names if name.startswith('CCF')]
+    # minor_cn_columns = [name for name in column_names if name.startswith('min')]
+    # major_cn_columns = [name for name in column_names if name.startswith('maj')]
+    # ref_counts_columns = [name for name in column_names if name.startswith('ref')]
+    # alt_counts_columns = [name for name in column_names if name.startswith('alt')]
     sample_names = [name.split('_')[1] for name in vaf_columns]
 
     all_clusters = data_frame.Cluster.unique()
@@ -89,7 +84,7 @@ if uploaded_file is not None:
     #################################################################################
 
     plot_type_ui = streamlit.sidebar.expander('Plot type')
-    plot_type = plot_type_ui.radio('Select plot type', ('Dot plot', 'Heat map', '3D line plot', '3D surface plot'))
+    plot_type = plot_type_ui.radio('Select plot type', ('Dot plot', 'Heat map', '3D line plot', '3D surface plot'), key='plot_type')
 
     if plot_type == 'Dot plot':
 
@@ -117,7 +112,7 @@ if uploaded_file is not None:
         # min_vaf = data_filtering.slider('Minimal MAF', min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
         # User input - Which data type to plot
-        data_type = streamlit.sidebar.radio('Select data type', ('VAF', 'pyclone_CCF', 'VAF_CCF'))
+        data_type = streamlit.sidebar.radio('Select data type', ('VAF', 'cluster_CCF', 'VAF_CCF'))
 
         #################################################################################
         #                           VISUAL APPEARANCE EXPANDER                          #
@@ -259,6 +254,32 @@ if uploaded_file is not None:
                 sample_combination = sample_combination[::-1]
             else:
                 sample_combination = orig_sample_combination
+
+
+            # If for some reason variants are uninformative in some samples (var + ref_counts = 0), we may indicate that by
+            # finding indexes for those cases and individually styling each corresponding marker in the trace, using:
+            # https://stackoverflow.com/questions/70275607/how-to-highlight-a-single-data-point-on-a-scatter-plot-using-plotly-express
+            #
+            # # User input - indicate uninformative VAFs
+            # indicate_uninformative_vafs = streamlit.checkbox('Indicate potentially uninformative VAFs', value=False)
+            #
+            # if indicate_uninformative_vafs:
+            #     uninformative_vaf_indexes = data_frame.index[data_frame['ref_counts_' + sample_combination[0]] == 0].tolist()
+            #     # uninformative_vaf_indexes = data_frame.index[
+            #     #     (
+            #     #         (data_frame['ref_counts_' + sample_combination[0]] == 0) &
+            #     #         (data_frame['alt_counts_' + sample_combination[0]]) == 0
+            #     #     ) |
+            #     #     (
+            #     #         (data_frame['ref_counts_' + sample_combination[1]] == 0) &
+            #     #         (data_frame['alt_counts_' + sample_combination[1]] == 0)
+            #     #     )
+            #     # ].tolist()
+            #
+            #     streamlit.write('ref_counts_' + sample_combination[0])
+            #     streamlit.write(uninformative_vaf_indexes)
+            #
+            # However, this does not seem to be a problem with current datasets, so not implemented
 
             # We currently have no structure to guarantee primary tumors on x axes and metastases on y. We could implement a manual axis flip
             x_y_axes = (data_type + '_' + sample_combination[0], data_type + '_' + sample_combination[1])
