@@ -6,12 +6,10 @@ import plotly_express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-__version__ = '1.8.0'
+__version__ = '1.9.0'
 
-# Production candidate. Can do VAF/VAF plots and heatmaps similar to the one in Stephanies PhD: page 53 - fig. 3
-# Todo: Make the cluster remove ability available for both plot types and fix color to clusters. Also, ability to filter minimal max VAF
-# Cluster colors should be part of the input file
-
+# New in this version is Pyclone_CFF changed to Cluster_CCF in UI and input files. Thus, for Cluster CCF views there is
+# no bacwards compatibility to older inout fileds
 
 # New in version 1.7: Added a new heat-map kind of plot similar to the one in Stephanies PhD: page 53 - fig. 3
 
@@ -32,12 +30,6 @@ if uploaded_file is not None:
 
     column_names = data_frame.columns
     vaf_columns = [name for name in column_names if (name.startswith('VAF') and not name.startswith('VAF_CCF'))]
-    # pyclone_ccf_columns = [name for name in column_names if name.startswith('pyclone')]
-    # vaf_ccf_columns = [name for name in column_names if name.startswith('CCF')]
-    # minor_cn_columns = [name for name in column_names if name.startswith('min')]
-    # major_cn_columns = [name for name in column_names if name.startswith('maj')]
-    # ref_counts_columns = [name for name in column_names if name.startswith('ref')]
-    # alt_counts_columns = [name for name in column_names if name.startswith('alt')]
     sample_names = [name.split('_')[1] for name in vaf_columns]
 
     all_clusters = data_frame.Cluster.unique()
