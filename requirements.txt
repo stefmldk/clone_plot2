@@ -1,3 +1,6 @@
 streamlit
 pandas
 plotly_express
+pyfish
+mpld3
+streamlit-sortables
