@@ -1,5 +1,6 @@
 streamlit
 pandas
+matplotlib==3.7.3
 plotly_express
 pyfish
 mpld3
