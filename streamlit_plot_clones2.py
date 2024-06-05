@@ -1006,7 +1006,7 @@ if uploaded_file is not None:
         visual_appearance = streamlit.sidebar.expander('Edit Fish plot')
 
         # User input - figure width
-        figure_width = visual_appearance.slider('Figure width', min_value=300, max_value=3000, step=10, value=1200)
+        figure_width = visual_appearance.slider('Figure width', min_value=300, max_value=3000, step=10, value=1180)
 
         # User input - figure width
         figure_height = visual_appearance.slider('Figure height', min_value=150, max_value=2000, step=10, value=800)
@@ -1083,3 +1083,5 @@ if uploaded_file is not None:
             streamlit_components_v1.html(html_fig, width=figure_width, height=figure_height, scrolling=False)
         with col2:
             streamlit.html(cluster_proportions_html)
+
+
