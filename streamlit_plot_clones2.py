@@ -716,7 +716,9 @@ if uploaded_file is not None:
 
         # User input - target sample
         plasma_sample = streamlit.sidebar.selectbox('Plasma sample', [None] + sample_names)
+
         if plasma_sample:
+
             comparison_samples_list = sample_names[:]
             comparison_samples_list.remove(plasma_sample)
             primary_tumor_samples_expander = streamlit.sidebar.expander('Primary tumor samples selector')
@@ -736,13 +738,25 @@ if uploaded_file is not None:
                 if metastasis_samples_dict[sample]:
                     metastasis_samples.append(sample)
             if primary_tumor_samples and metastasis_samples:
-                # In the following, we want to assess VAF in the plasma sample for those mutaions that are represented
-                # in either primary_tumor_samples, metastasis_samples, or are shared
+
+                # In the following, we want to assess VAF in primary tumor and metastases of mutations found in the plasma sample
+
                 data = {
                     'VAF': [],
                     'ctDNA mutations': []
                 }
-                for index, row in data_frame.iterrows():
+
+                # User input - Include only ctDNA mutations
+                ct_dna_mutations_only = streamlit.sidebar.checkbox('Include only ctDNA mutations', value=True)
+                if ct_dna_mutations_only:
+                    test_df = data_frame[data_frame[f'VAF_{plasma_sample}'] > 0]
+                else:
+                    test_df = data_frame
+
+                shared_n = 0
+                primary_n = 0
+                metastasis_n = 0
+                for index, row in test_df.iterrows():
                     found_in_primary = False
                     found_in_metastasis = False
                     for sample in primary_tumor_samples:
@@ -756,17 +770,20 @@ if uploaded_file is not None:
                     if found_in_primary and found_in_metastasis:
                         data['VAF'].append(row[f'VAF_{plasma_sample}'])
                         data['ctDNA mutations'].append('Shared')
+                        shared_n += 1
                     elif found_in_primary:
                         data['VAF'].append(row[f'VAF_{plasma_sample}'])
-                        data['ctDNA mutations'].append('Primary specific')
+                        data['ctDNA mutations'].append('Primary-specific')
+                        primary_n += 1
                     elif found_in_metastasis:
                         data['VAF'].append(row[f'VAF_{plasma_sample}'])
-                        data['ctDNA mutations'].append('Metastasis specific')
+                        data['ctDNA mutations'].append('Metastasis-specific')
+                        metastasis_n += 1
 
                 plotting_data = pandas.DataFrame.from_dict(data)
 
                 # User input - X-axis sorting
-                category_order = ['Primary specific', 'Metastasis specific', 'Shared']
+                category_order = ['Primary-specific', 'Metastasis-specific', 'Shared']
                 order_widget = streamlit.sidebar.container()
                 order_widget.write('Choose x-axis order by dragging:')
                 with order_widget:
@@ -776,8 +793,18 @@ if uploaded_file is not None:
                 plot_type = streamlit.sidebar.radio('Plot type', ['Box', 'Violin', 'Combined'])
 
                 # User input - plot size
-                plot_height = streamlit.sidebar.slider('Plot height', min_value=200, max_value=1000, value=800, step=100)
-                plot_width = streamlit.sidebar.slider('Plot width', min_value=100, max_value=1000, value=400, step=10)
+                plot_height = streamlit.sidebar.number_input('Plot height', min_value=200, max_value=1000, value=800, step=1)
+                plot_width = streamlit.sidebar.number_input('Plot width', min_value=100, max_value=1000, value=400, step=1)
+
+                # User input - edit y-axis
+                edit_y_axis = streamlit.sidebar.checkbox('Edit Y-axis range', value=False)
+
+                # User input - y-axis range
+                yaxis_max = None
+                yaxis_min = None
+                if edit_y_axis:
+                    yaxis_max = streamlit.sidebar.number_input('Y-axis maximum', min_value=0.1, max_value=1.0, value=None)
+                    yaxis_min = streamlit.sidebar.number_input('Y-axis minimum', min_value=-1.0, max_value=0.00, value=0.0)
 
                 if plot_type == 'Box':
                     figure = px.box(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, category_orders={'ctDNA mutations': sorted_x_items})
@@ -786,6 +813,11 @@ if uploaded_file is not None:
                     figure = px.violin(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, category_orders={'ctDNA mutations': sorted_x_items})
                 elif plot_type == 'Combined':
                     figure = px.violin(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, box=True, category_orders={'ctDNA mutations': sorted_x_items})
+
+                if yaxis_max is not None and yaxis_min is not None:
+                    figure.update_layout(
+                        yaxis_range=[yaxis_min, yaxis_max]
+                    )
 
                 # Horizontal legends on op
                 # figure.update_layout(legend=dict(
@@ -799,7 +831,10 @@ if uploaded_file is not None:
                 #     hoverlabel_align='left'  # Necessary for streamlit to make text for all labels align left
                 # )
                 streamlit.plotly_chart(figure, theme=None)
-
+                # with streamlit.container():
+                streamlit.text(f'# Primary-specific mutations:\t\t{primary_n}')
+                streamlit.text(f'# Metastasis-specific mutations:\t{metastasis_n}')
+                streamlit.text(f'# Shared mutations:\t\t\t{shared_n}')
 
     elif plot_type == 'Fish plot':
         class Node:
