@@ -7,17 +7,11 @@ import os
 import plotly_express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-import plotly.io as plotly_io
 import json
 import mpld3
-import numpy
 
 import matplotlib.pyplot as matplotlib_pyplot
 from matplotlib.colors import ListedColormap
-from matplotlib.colors import to_hex as mpl_to_hex
-# import plotly.matplotlylib as plotly_matplotlylib
-
-import plotly.tools as plotly_tools
 from pyfish import fish_plot, process_data, setup_figure
 
 script_dir = os.path.dirname(__file__)
@@ -69,8 +63,6 @@ if uploaded_file is not None:
     # Since we do not know the interrelation of samples - i.e. which is primary tumor and which is metastasis etc. we make
     # no attempt to organize combinations in terms of which sample name is first/last in combinations. As this, however,
     # will effect what axis each sample goes to, we implement the ability to switch axes on the plots later in the script.
-
-
 
     #################################################################################
     #                              Select plot type                                 #
@@ -294,7 +286,6 @@ if uploaded_file is not None:
             else:
                 sample_combination = orig_sample_combination
 
-
             # If for some reason variants are uninformative in some samples (var + ref_counts = 0), we may indicate that by
             # finding indexes for those cases and individually styling each corresponding marker in the trace, using:
             # https://stackoverflow.com/questions/70275607/how-to-highlight-a-single-data-point-on-a-scatter-plot-using-plotly-express
@@ -428,7 +419,6 @@ if uploaded_file is not None:
         #################################################################################
 
         remove_gene_names = edit_plot_ui.checkbox('Remove gene names', value=False)
-
 
         figure = make_subplots(
             len(clusters),
@@ -673,7 +663,6 @@ if uploaded_file is not None:
                 cluster_data = pandas.DataFrame(peak_sorted_vaf_array, columns=vaf_columns, index=cluster_indexes)
                 # streamlit.write(peak_sorted_vaf_array)
 
-
             before_df = pandas.DataFrame(index=list(range(data_frame.first_valid_index(), cluster_data.first_valid_index())), columns=vaf_columns)
             after_df = pandas.DataFrame(index=list(range(cluster_data.last_valid_index() + 1, data_frame.last_valid_index() + 1)), columns=vaf_columns)
             cluster_dataframes[cluster_colors[i]] = pandas.concat([before_df, cluster_data, after_df], axis=0)
@@ -719,6 +708,7 @@ if uploaded_file is not None:
 
         if not plasma_sample:
             streamlit.write('Please choose plasma, primary tumour, and metastasis samples in the menu to the left to see the plot.')
+
         else:
 
             comparison_samples_list = sample_names[:]
@@ -750,8 +740,9 @@ if uploaded_file is not None:
 
                 # User input - Include only ctDNA mutations
                 ct_dna_mutations_only = streamlit.sidebar.checkbox('Include only ctDNA mutations', value=True)
+                ct_dna_data_frame = data_frame[data_frame[f'VAF_{plasma_sample}'] > 0]
                 if ct_dna_mutations_only:
-                    test_df = data_frame[data_frame[f'VAF_{plasma_sample}'] > 0]
+                    test_df = ct_dna_data_frame
                 else:
                     test_df = data_frame
 
@@ -783,6 +774,7 @@ if uploaded_file is not None:
                         metastasis_n += 1
 
                 plotting_data = pandas.DataFrame.from_dict(data)
+                # streamlit.write(plotting_data)
 
                 # User input - X-axis sorting
                 category_order = ['Primary-specific', 'Metastasis-specific', 'Shared']
@@ -795,7 +787,7 @@ if uploaded_file is not None:
                 plot_type = streamlit.sidebar.radio('Plot type', ['Box', 'Violin', 'Combined'])
 
                 # User input - plot size
-                plot_height = streamlit.sidebar.number_input('Plot height', min_value=200, max_value=1000, value=800, step=1)
+                plot_height = streamlit.sidebar.number_input('Plot height', min_value=200, max_value=1000, value=700, step=1)
                 plot_width = streamlit.sidebar.number_input('Plot width', min_value=100, max_value=1000, value=400, step=1)
 
                 # User input - edit y-axis
@@ -832,11 +824,12 @@ if uploaded_file is not None:
                 # figure.update_layout(
                 #     hoverlabel_align='left'  # Necessary for streamlit to make text for all labels align left
                 # )
-                streamlit.plotly_chart(figure, theme=None)
-                # with streamlit.container():
+
+                # streamlit.text(f'ctDNA mutations ratio:\t\t\t{round(len(ct_dna_data_frame) / len(data_frame), 3)}')
                 streamlit.text(f'# Primary-specific mutations:\t\t{primary_n}')
                 streamlit.text(f'# Metastasis-specific mutations:\t{metastasis_n}')
                 streamlit.text(f'# Shared mutations:\t\t\t{shared_n}')
+                streamlit.plotly_chart(figure, theme=None)
 
     elif plot_type == 'Fish plot':
         class Node:
