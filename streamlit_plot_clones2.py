@@ -717,7 +717,9 @@ if uploaded_file is not None:
         # User input - target sample
         plasma_sample = streamlit.sidebar.selectbox('Plasma sample', [None] + sample_names)
 
-        if plasma_sample:
+        if not plasma_sample:
+            streamlit.write('Please choose plasma, primary tumour, and metastasis samples in the menu to the left to see the plot.')
+        else:
 
             comparison_samples_list = sample_names[:]
             comparison_samples_list.remove(plasma_sample)
