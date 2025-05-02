@@ -346,7 +346,7 @@ if uploaded_file is not None:
             ).update_layout(
                 hoverlabel_align='left'  # Necessary for streamlit to make text for all labels align left
             )
-        streamlit.plotly_chart(figure, theme=None)
+        streamlit.plotly_chart(figure, theme=None, use_container_width=False)
     elif plot_type == 'Heat map':
         # Add UI for manipulating the heatmap
         edit_plot_ui = streamlit.sidebar.expander('Edit Plot')
@@ -601,7 +601,7 @@ if uploaded_file is not None:
             ),
             template='plotly'
         )
-        streamlit.plotly_chart(figure, theme='streamlit')
+        streamlit.plotly_chart(figure, theme='streamlit', use_container_width=False)
     elif plot_type == '3D surface plot':
         from scipy.signal import savgol_filter
 
@@ -699,7 +699,7 @@ if uploaded_file is not None:
             )
         )
 
-        streamlit.plotly_chart(figure, theme='streamlit')
+        streamlit.plotly_chart(figure, theme='streamlit', use_container_width=False)
     elif plot_type == 'stDNA plots':
         from streamlit_sortables import sort_items
 
@@ -829,7 +829,7 @@ if uploaded_file is not None:
                 streamlit.text(f'# Primary-specific mutations:\t\t{primary_n}')
                 streamlit.text(f'# Metastasis-specific mutations:\t{metastasis_n}')
                 streamlit.text(f'# Shared mutations:\t\t\t{shared_n}')
-                streamlit.plotly_chart(figure, theme=None)
+                streamlit.plotly_chart(figure, theme=None, use_container_width=False)
 
     elif plot_type == 'Fish plot':
         class Node:
