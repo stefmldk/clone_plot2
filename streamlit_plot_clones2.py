@@ -16,7 +16,7 @@ from pyfish import fish_plot, process_data, setup_figure
 
 script_dir = os.path.dirname(__file__)
 
-__version__ = '2.1.2'  # With statistical plots for ctDNA where primary samples are merged and metastatic samples are merged
+__version__ = '2.1.4'  # With statistical plots for ctDNA where primary samples are merged and metastatic samples are merged
 
 # New in this version is Pyclone_CFF changed to Cluster_CCF in UI and input files. Thus, for Cluster CCF views there is
 # no bacwards compatibility to older inout fileds
@@ -68,7 +68,7 @@ if uploaded_file is not None:
     #                              Select plot type                                 #
     #################################################################################
     # Figure out if Fish plot should be an option - if fish plot data exist in the dataframe
-    plot_types = ['Dot plot', 'Heat map', '3D line plot', '3D surface plot', 'stDNA plots']
+    plot_types = ['Dot plot', 'Heat map', '3D line plot', '3D surface plot', 'ctDNA plot']
     try:
         tree_branches = [x for x in data_frame.tree_branches.unique() if isinstance(x, str)][0].split(';')
         clone_proportions = json.loads([x for x in data_frame.clone_proportions.unique() if isinstance(x, str)][0])
@@ -152,6 +152,14 @@ if uploaded_file is not None:
         # Define Expander for visual appearance
         visual_appearance = streamlit.sidebar.expander('Edit visual appearance')
 
+        if plot_type == 'Dot plot':
+            plot_theme = visual_appearance.selectbox('Plot theme', ['plotly', 'plotly_white', 'plotly_dark', 'ggplot2', 'seaborn', 'simple_white', 'presentation', 'xgridoff', 'ygridoff', 'gridon', 'none'])
+
+            frame_layout = streamlit.sidebar.expander('Frame layout')
+            frame_layout.write('If any of the plots are "cut off", you can increase the size of the plot display frame here - rarely necessary.')
+            frame_width = frame_layout.slider('Frame width', min_value=1000, max_value=5000, step=100, value=3000)
+            frame_height = frame_layout.slider('Frame height', min_value=500, max_value=2500, step=100, value=900)
+
         # User input - dot size
         dot_size = visual_appearance.selectbox('Dot size...', range(5, 21), index=3)
 
@@ -194,8 +202,7 @@ if uploaded_file is not None:
             subplot_titles = list(display_combinations.keys())[:-1]
 
             # Define plot settings for axis flipping
-            plot_settings = streamlit.sidebar.expander('Edit plots')
-            plot_settings.write('Flip axes')
+            plot_settings = streamlit.sidebar.expander('Flip axes')
             flip_combination_axes = {}
             for title in subplot_titles:
                 flip_combination_axes[title] = plot_settings.checkbox(title, value=False, key=title)
@@ -265,8 +272,9 @@ if uploaded_file is not None:
 
             ).update_layout(
                 hoverlabel_align='left',  # Necessary for streamlit to make text for all labels align left
-                width=subplot_size * grid_columns + (grid_columns - 1) * h_space,
+                width=subplot_size * grid_columns + (grid_columns - 1) * h_space + 120,
                 height=subplot_size * grid_rows + (grid_rows - 1) * v_space,
+                template=plot_theme
             ).update_yaxes(
                 range=range_y
             ).update_xaxes(
@@ -319,7 +327,7 @@ if uploaded_file is not None:
                                 range_y=range_y,
                                 color="Cluster",
                                 color_discrete_sequence=cluster_colors,
-                                width=plot_width, height=plot_width,
+                                width=plot_width + 108, height=plot_width,
                                 # facet_col='Sample',
                                 hover_data={
                                     # x_y_axes[0]: False,
@@ -344,9 +352,13 @@ if uploaded_file is not None:
                 marker=marker,
                 selector=dict(mode='markers'),
             ).update_layout(
-                hoverlabel_align='left'  # Necessary for streamlit to make text for all labels align left
+                hoverlabel_align='left',  # Necessary for streamlit to make text for all labels align left
+                template=plot_theme
             )
-        streamlit.plotly_chart(figure, theme=None, use_container_width=False)
+
+        # streamlit.plotly_chart(figure, theme=plot_theme, use_container_width=False) # Old way
+        streamlit_components_v1.html(figure.to_html(), width=frame_width, height=frame_height, scrolling=True)
+
     elif plot_type == 'Heat map':
         # Add UI for manipulating the heatmap
         edit_plot_ui = streamlit.sidebar.expander('Edit Plot')
@@ -700,8 +712,12 @@ if uploaded_file is not None:
         )
 
         streamlit.plotly_chart(figure, theme='streamlit', use_container_width=False)
-    elif plot_type == 'stDNA plots':
+    elif plot_type == 'ctDNA plot':
         from streamlit_sortables import sort_items
+
+        # plot_theme = streamlit.sidebar.selectbox('Plot theme', ['plotly', 'plotly_white', 'plotly_dark', 'ggplot2', 'seaborn', 'simple_white', 'presentation', 'xgridoff', 'ygridoff', 'gridon', 'none'])
+        # frame_width = streamlit.sidebar.slider('Frame width', min_value=1000, max_value=5000, step=100, value=3000)
+        # frame_height = streamlit.sidebar.slider('Frame height', min_value=500, max_value=2500, step=100, value=900)
 
         # User input - target sample
         plasma_sample = streamlit.sidebar.selectbox('Plasma sample', [None] + sample_names)
@@ -776,41 +792,52 @@ if uploaded_file is not None:
                 plotting_data = pandas.DataFrame.from_dict(data)
                 # streamlit.write(plotting_data)
 
+                # Define Expander for visual appearance
+                visual_appearance = streamlit.sidebar.expander('Edit visual appearance')
+
+                plot_theme = visual_appearance.selectbox('Plot theme', ['plotly', 'plotly_white', 'plotly_dark', 'ggplot2', 'seaborn', 'simple_white', 'presentation', 'xgridoff', 'ygridoff', 'gridon', 'none'])
+
+                frame_layout = streamlit.sidebar.expander('Frame layout')
+                frame_layout.write('If any of the plots are "cut off", you can increase the size of the plot display frame here - rarely necessary.')
+                frame_width = frame_layout.slider('Frame width', min_value=1000, max_value=5000, step=100, value=3000)
+                frame_height = frame_layout.slider('Frame height', min_value=500, max_value=2500, step=100, value=900)
+
                 # User input - X-axis sorting
                 category_order = ['Primary-specific', 'Metastasis-specific', 'Shared']
-                order_widget = streamlit.sidebar.container()
+                order_widget = visual_appearance.container()
                 order_widget.write('Choose x-axis order by dragging:')
                 with order_widget:
                     sorted_x_items = sort_items(category_order)
 
                 # User input - plot type
-                plot_type = streamlit.sidebar.radio('Plot type', ['Box', 'Violin', 'Combined'])
+                plot_type = visual_appearance.radio('Plot type', ['Box', 'Violin', 'Combined'])
 
                 # User input - plot size
-                plot_height = streamlit.sidebar.number_input('Plot height', min_value=200, max_value=1000, value=700, step=1)
-                plot_width = streamlit.sidebar.number_input('Plot width', min_value=100, max_value=1000, value=400, step=1)
+                plot_height = visual_appearance.number_input('Plot height', min_value=200, max_value=1000, value=600, step=20)
+                plot_width = visual_appearance.number_input('Plot width', min_value=100, max_value=1000, value=400, step=20)
 
                 # User input - edit y-axis
-                edit_y_axis = streamlit.sidebar.checkbox('Edit Y-axis range', value=False)
+                edit_y_axis = visual_appearance.checkbox('Edit Y-axis range', value=False)
 
                 # User input - y-axis range
                 yaxis_max = None
                 yaxis_min = None
                 if edit_y_axis:
-                    yaxis_max = streamlit.sidebar.number_input('Y-axis maximum', min_value=0.1, max_value=1.0, value=None)
-                    yaxis_min = streamlit.sidebar.number_input('Y-axis minimum', min_value=-1.0, max_value=0.00, value=0.0)
+                    visual_appearance.write('Please define values for both min and max to see an effect.')
+                    yaxis_max = visual_appearance.number_input('Y-axis maximum', min_value=0.1, max_value=1.0, value=None)
+                    yaxis_min = visual_appearance.number_input('Y-axis minimum', min_value=-1.0, max_value=0.00, value=0.0)
 
                 if plot_type == 'Box':
-                    figure = px.box(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, category_orders={'ctDNA mutations': sorted_x_items})
+                    figure = px.box(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, template=plot_theme, category_orders={'ctDNA mutations': sorted_x_items})
                 elif plot_type == 'Violin':
                     # Make violin plot from the data
-                    figure = px.violin(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, category_orders={'ctDNA mutations': sorted_x_items})
+                    figure = px.violin(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, template=plot_theme, category_orders={'ctDNA mutations': sorted_x_items})
                 elif plot_type == 'Combined':
-                    figure = px.violin(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, box=True, category_orders={'ctDNA mutations': sorted_x_items})
+                    figure = px.violin(plotting_data, y='VAF', color='ctDNA mutations', width=plot_width, height=plot_height, box=True, template=plot_theme, category_orders={'ctDNA mutations': sorted_x_items})
 
                 if yaxis_max is not None and yaxis_min is not None:
                     figure.update_layout(
-                        yaxis_range=[yaxis_min, yaxis_max]
+                        yaxis_range=[yaxis_min, yaxis_max],
                     )
 
                 # Horizontal legends on op
@@ -829,7 +856,9 @@ if uploaded_file is not None:
                 streamlit.text(f'# Primary-specific mutations:\t\t{primary_n}')
                 streamlit.text(f'# Metastasis-specific mutations:\t{metastasis_n}')
                 streamlit.text(f'# Shared mutations:\t\t\t{shared_n}')
-                streamlit.plotly_chart(figure, theme=None, use_container_width=False)
+
+                # streamlit.plotly_chart(figure, theme='streamlit', use_container_width=False)  # Old way
+                streamlit_components_v1.html(figure.to_html(), width=frame_width, height=frame_height, scrolling=True)
 
     elif plot_type == 'Fish plot':
         class Node:
